@@ -65,7 +65,6 @@ jobs:
     - checkout
     - restore_cache: # special step to restore the dependency cache
         key: dependency-cache-e2e-{{ .Branch }}-{{ checksum "package.json" }}
-    - run: npm start &
     - run: npm run test-e2e
 
   deploy-staging:
