@@ -6,12 +6,12 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - run:
         name: Setup Dependencies
         command: npm install
     - save_cache: # special step to save the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
         paths:
         - ./node_modules
         - ~/.npm
@@ -23,7 +23,7 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - run: # run tests
         name: Run Test and Coverage
         command: |
@@ -37,7 +37,7 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - run: npm start &
     - run: npm run test-e2e
 
@@ -47,7 +47,7 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - add_ssh_keys:
         fingerprints:
           - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
@@ -62,7 +62,7 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - add_ssh_keys:
         fingerprints:
         - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
