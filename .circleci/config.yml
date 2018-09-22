@@ -125,6 +125,9 @@ workflows:
           requires:
           - unit-tests
       - deploy-production:
+          filters:
+            branches:
+              only: master
           requires:
           - hold
           - e2e-tests
