@@ -72,15 +72,18 @@ workflows:
     jobs:
       - build
       - deploy-staging:
-          requires:
-          - build
           filters:
             branches:
               only: master
+          requires:
+          - build
   build-and-deploy-production:
     jobs:
     - build
     - hold:
+        filters:
+          branches:
+            only: master
         type: approval
         requires:
           - build
