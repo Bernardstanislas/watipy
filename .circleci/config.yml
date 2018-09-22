@@ -33,7 +33,11 @@ jobs:
 
   e2e-tests:
     docker:
-    - image: circleci/node:8
+    # the Docker image with Cypress dependencies
+    - image: cypress/base:8
+      environment:
+        ## this enables colors in the output
+        TERM: xterm
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
