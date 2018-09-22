@@ -6,22 +6,72 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - run:
         name: Setup Dependencies
         command: npm install
     - save_cache: # special step to save the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
         paths:
         - ./node_modules
+        - ~/.npm
+        - ~/.cache
+
+  build-e2e:
+    docker:
+    # the Docker image with Cypress dependencies
+    - image: cypress/base:8
+      environment:
+        ## this enables colors in the output
+        TERM: xterm
+    working_directory: ~/app
+    steps:
+    - checkout
+    - restore_cache: # special step to restore the dependency cache
+        key: dependency-cache-e2e-{{ .Branch }}-{{ checksum "package.json" }}
+    - run:
+        name: Setup Dependencies
+        command: npm install
+    - save_cache: # special step to save the dependency cache
+        key: dependency-cache-e2e-{{ .Branch }}-{{ checksum "package.json" }}
+        paths:
+        - ./node_modules
+        - ~/.npm
+        - ~/.cache
+
+  unit-tests:
+    docker:
+    - image: circleci/node:8
+    steps:
+    - checkout
+    - restore_cache: # special step to restore the dependency cache
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - run: # run tests
         name: Run Test and Coverage
         command: |
-          npm test -- --coverage
-    - store_artifacts:
-        path: /coverage
+          npm test -- --reporters=jest-junit
+        environment:
+          JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
     - store_test_results:
-        path: /coverage
+        path: reports/junit
+    - store_artifacts:
+        path: reports/junit
+
+  e2e-tests:
+    docker:
+    # the Docker image with Cypress dependencies
+    - image: cypress/base:8
+      environment:
+        ## this enables colors in the output
+        TERM: xterm
+    working_directory: ~/app
+    steps:
+    - checkout
+    - restore_cache: # special step to restore the dependency cache
+        key: dependency-cache-e2e-{{ .Branch }}-{{ checksum "package.json" }}
+    - run: npm run test-e2e
+    - store_artifacts:
+        path: cypress/videos
 
   deploy-staging:
     docker:
@@ -29,14 +79,7 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
-    - run:
-        name: Setup Dependencies
-        command: npm install
-    - save_cache: # special step to save the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
-        paths:
-        - ./node_modules
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - add_ssh_keys:
         fingerprints:
           - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
@@ -51,14 +94,7 @@ jobs:
     steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
-    - run:
-        name: Setup Dependencies
-        command: npm install
-    - save_cache: # special step to save the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
-        paths:
-        - ./node_modules
+        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - add_ssh_keys:
         fingerprints:
         - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
@@ -66,27 +102,37 @@ jobs:
         name: Deploy to Github Pages
         command: |
           npm run deploy-prod
+
 workflows:
   version: 2
-  build-and-deploy-staging:
+  build-test-and-deploy:
     jobs:
       - build
+      - build-e2e
+      - unit-tests:
+          requires:
+          - build
+      - e2e-tests:
+          requires:
+          - build-e2e
       - deploy-staging:
           filters:
             branches:
               only: master
           requires:
-          - build
-  build-and-deploy-production:
-    jobs:
-    - build
-    - hold:
-        filters:
-          branches:
-            only: master
-        type: approval
-        requires:
-          - build
-    - deploy-production:
-        requires:
+          - unit-tests
+          - e2e-tests
+      - hold:
+          filters:
+            branches:
+              only: master
+          type: approval
+          requires:
+          - unit-tests
+      - deploy-production:
+          filters:
+            branches:
+              only: master
+          requires:
           - hold
+          - e2e-tests
