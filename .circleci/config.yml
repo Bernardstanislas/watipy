@@ -14,14 +14,18 @@ jobs:
         key: dependency-cache-{{ checksum "package.json" }}
         paths:
         - ./node_modules
+
+  unit-tests:
+    docker:
+    - image: circleci/node:8
+    steps:
+    - checkout
+    - restore_cache: # special step to restore the dependency cache
+        key: dependency-cache-{{ checksum "package.json" }}
     - run: # run tests
         name: Run Test and Coverage
         command: |
           npm test -- --coverage
-    - store_artifacts:
-        path: /coverage
-    - store_test_results:
-        path: /coverage
 
   deploy-staging:
     docker:
@@ -30,13 +34,6 @@ jobs:
     - checkout
     - restore_cache: # special step to restore the dependency cache
         key: dependency-cache-{{ checksum "package.json" }}
-    - run:
-        name: Setup Dependencies
-        command: npm install
-    - save_cache: # special step to save the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
-        paths:
-        - ./node_modules
     - add_ssh_keys:
         fingerprints:
           - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
@@ -52,13 +49,6 @@ jobs:
     - checkout
     - restore_cache: # special step to restore the dependency cache
         key: dependency-cache-{{ checksum "package.json" }}
-    - run:
-        name: Setup Dependencies
-        command: npm install
-    - save_cache: # special step to save the dependency cache
-        key: dependency-cache-{{ checksum "package.json" }}
-        paths:
-        - ./node_modules
     - add_ssh_keys:
         fingerprints:
         - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
@@ -66,27 +56,34 @@ jobs:
         name: Deploy to Github Pages
         command: |
           npm run deploy-prod
+
 workflows:
   version: 2
   build-and-deploy-staging:
     jobs:
       - build
+      - unit-tests:
+          requires:
+          - build
       - deploy-staging:
           filters:
             branches:
               only: master
           requires:
-          - build
+          - unit-tests
   build-and-deploy-production:
     jobs:
     - build
+    - unit-tests:
+        requires:
+        - build
     - hold:
         filters:
           branches:
             only: master
         type: approval
         requires:
-          - build
+          - unit-tests
     - deploy-production:
         requires:
           - hold
