@@ -45,14 +45,48 @@ jobs:
         command: |
           npm run deploy
 
+  deploy-production:
+    docker:
+    - image: circleci/node:8
+    steps:
+    - checkout
+    - restore_cache: # special step to restore the dependency cache
+        key: dependency-cache-{{ checksum "package.json" }}
+    - run:
+        name: Setup Dependencies
+        command: npm install
+    - save_cache: # special step to save the dependency cache
+        key: dependency-cache-{{ checksum "package.json" }}
+        paths:
+        - ./node_modules
+    - add_ssh_keys:
+        fingerprints:
+        - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
+    - run:
+        name: Deploy to Github Pages
+        command: |
+          npm run deploy-prod
 workflows:
   version: 2
-  build-and-deploy:
+  build-and-deploy-staging:
+    jobs:
+      - build
+      - deploy-staging:
+          filters:
+            branches:
+              only: master
+          requires:
+          - build
+  build-and-deploy-production:
     jobs:
     - build
-    - deploy-staging:
-        requires:
-        - build
+    - hold:
         filters:
           branches:
             only: master
+        type: approval
+        requires:
+          - build
+    - deploy-production:
+        requires:
+          - hold

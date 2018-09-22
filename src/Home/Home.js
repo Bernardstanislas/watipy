@@ -7,7 +7,7 @@ import Logo from './Logo';
 const colors = [
     { backgroundColor: '#fef9f9', textColor: '#ff4e00' },
     { backgroundColor: '#f5fefd', textColor: '#1cd0c4' },
-    { backgroundColor: '#333333', textColor: '#594e4e' }
+    { backgroundColor: '#ffffff', textColor: '#594e4e' }
 ];
 
 export default class Home extends React.PureComponent {
