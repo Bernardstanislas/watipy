@@ -20,7 +20,7 @@
     "predeploy": "cp .env.dev .env && echo \"staging.watipy.com\" > public/CNAME && npm run build",
     "deploy": "node deploy.js",
     "predeploy-prod": "cp .env.prod .env && echo \"www.watipy.com\" > public/CNAME && npm run build",
-    "deploy-prod": "gh-pages -d build -r git@github.com:Bernardstanislas/watipy.git"
+    "deploy-prod": "node deploy.js production"
   },
   "devDependencies": {
     "babel-jest": "21.2.0",
