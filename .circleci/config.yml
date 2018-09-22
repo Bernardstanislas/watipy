@@ -70,6 +70,8 @@ jobs:
     - restore_cache: # special step to restore the dependency cache
         key: dependency-cache-e2e-{{ .Branch }}-{{ checksum "package.json" }}
     - run: npm run test-e2e
+    - store_artifacts:
+        path: cypress/videos
 
   deploy-staging:
     docker:
