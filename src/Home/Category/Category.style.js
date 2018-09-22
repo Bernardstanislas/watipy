@@ -1,4 +1,7 @@
+import React from 'react';
 import styled from 'styled-components';
+
+import PointerContext from 'pointer';
 
 const StyledCategory = styled.div`
     width: 33%;
@@ -7,6 +10,7 @@ const StyledCategory = styled.div`
     align-items: center;
     justify-content: center;
     padding: 70px;
+    overflow-x: hidden;
     
     &:nth-of-type(3) {
         z-index: 1;
@@ -41,8 +45,22 @@ const StyledCategory = styled.div`
     }
     
     .dropped-text {
+        transform: translate(${props => props.xOffset * 30}px, ${props => props.yOffset * 30}px);
         opacity: 0.13;
     }
 `;
 
-export default StyledCategory;
+export default ({ horizontalCenter, backgroundColor, textColor, children}) => (
+    <PointerContext.Consumer>
+        {({ x, y }) => (
+            <StyledCategory
+                backgroundColor={backgroundColor}
+                textColor={textColor}
+                xOffset={horizontalCenter - x}
+                yOffset={0.5 - y}
+            >
+                {children}
+            </StyledCategory>
+        )}
+    </PointerContext.Consumer>
+);
