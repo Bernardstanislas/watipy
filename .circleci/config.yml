@@ -26,6 +26,18 @@ jobs:
         name: Run Test and Coverage
         command: |
           npm test -- --coverage
+    - store_test_results:
+        path: coverage
+
+  e2e-tests:
+    docker:
+    - image: circleci/node:8
+    steps:
+    - checkout
+    - restore_cache: # special step to restore the dependency cache
+        key: dependency-cache-{{ checksum "package.json" }}
+    - run: npm start &
+    - run: npm run test-e2e
 
   deploy-staging:
     docker:
@@ -65,12 +77,16 @@ workflows:
       - unit-tests:
           requires:
           - build
+      - e2e-tests:
+          requires:
+          - build
       - deploy-staging:
           filters:
             branches:
               only: master
           requires:
           - unit-tests
+          - e2e-tests
   build-and-deploy-production:
     jobs:
     - build
