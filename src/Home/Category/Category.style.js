@@ -7,6 +7,7 @@ const StyledCategory = styled.div`
     align-items: center;
     justify-content: center;
     padding: 70px;
+    overflow-x: hidden;
     
     &:nth-of-type(3) {
         z-index: 1;
