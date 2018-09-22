@@ -1,9 +1,5 @@
-version: 2
-jobs:
-  build:
-    docker:
-    - image: circleci/node:8
-    steps:
+npm_install: &npm_install
+  steps:
     - checkout
     - restore_cache: # special step to restore the dependency cache
         key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
@@ -17,41 +13,68 @@ jobs:
         - ~/.npm
         - ~/.cache
 
+add_ssh_keys: &add_ssh_keys
+  - add_ssh_keys:
+    fingerprints:
+      - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
+
+filter_master_branch: &filter_master_branch
+  filters:
+    branches:
+      only: master
+
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:8
+    <<: *npm_install
+
   build-e2e:
     docker:
-    # the Docker image with Cypress dependencies
-    - image: cypress/base:8
-      environment:
-        ## this enables colors in the output
-        TERM: xterm
+      # the Docker image with Cypress dependencies
+      - image: cypress/base:8
+        environment:
+          ## this enables colors in the output
+          TERM: xterm
     working_directory: ~/app
+    <<: *npm_install
+
+  install-code-climate-reporter:
+    docker:
+    - image: circleci/node:8
     steps:
-    - checkout
-    - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-e2e-{{ .Branch }}-{{ checksum "package.json" }}
     - run:
-        name: Setup Dependencies
-        command: npm install
-    - save_cache: # special step to save the dependency cache
-        key: dependency-cache-e2e-{{ .Branch }}-{{ checksum "package.json" }}
+        name:  Download cc-test-reporter
+        command: |
+          mkdir -p tmp/
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./tmp/cc-test-reporter
+          chmod +x ./tmp/cc-test-reporter
+    - persist_to_workspace:
+        root: tmp
         paths:
-        - ./node_modules
-        - ~/.npm
-        - ~/.cache
+        - cc-test-reporter
 
   unit-tests:
     docker:
     - image: circleci/node:8
     steps:
     - checkout
+    - attach_workspace:
+        at: ~/project/tmp
     - restore_cache: # special step to restore the dependency cache
         key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
     - run: # run tests
         name: Run Test and Coverage
         command: |
           npm test -- --reporters=jest-junit
+          ./tmp/cc-test-reporter format-coverage -t lcov -o tmp/codeclimate.frontend.json coverage/lcov.info
         environment:
           JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
+    - persist_to_workspace:
+        root: tmp
+        paths:
+        - codeclimate.frontend.json
     - store_test_results:
         path: reports/junit
     - store_artifacts:
@@ -73,35 +96,48 @@ jobs:
     - store_artifacts:
         path: cypress/videos
 
+  upload-coverage:
+    docker:
+    - image: circleci/node:8
+    environment:
+    - CC_TEST_REPORTER_ID: 65d0b5d7999e00c04eb62349891dffcd54e92a2710668818d4842bc4697ee5c0
+    steps:
+    - attach_workspace:
+        at: ~/project/tmp
+    - run:
+        name: Upload coverage results to Code Climate
+        command: |
+          ./tmp/cc-test-reporter upload-coverage -i tmp/codeclimate.frontend.json
+
   deploy-staging:
     docker:
     - image: circleci/node:8
     steps:
-    - checkout
-    - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
-    - add_ssh_keys:
+      - checkout
+      - restore_cache: # special step to restore the dependency cache
+          key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
+      - add_ssh_keys:
         fingerprints:
-          - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
-    - run:
-        name: Deploy to Github Pages
-        command: |
-          npm run deploy
+        - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
+      - run:
+          name: Deploy to Github Pages
+          command: |
+            npm run deploy
 
   deploy-production:
     docker:
     - image: circleci/node:8
     steps:
-    - checkout
-    - restore_cache: # special step to restore the dependency cache
-        key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
-    - add_ssh_keys:
+      - checkout
+      - restore_cache: # special step to restore the dependency cache
+          key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
+      - add_ssh_keys:
         fingerprints:
         - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
-    - run:
-        name: Deploy to Github Pages
-        command: |
-          npm run deploy-prod
+      - run:
+          name: Deploy to Github Pages
+          command: |
+            npm run deploy-prod
 
 workflows:
   version: 2
@@ -109,30 +145,29 @@ workflows:
     jobs:
       - build
       - build-e2e
+      - install-code-climate-reporter
       - unit-tests:
           requires:
           - build
+          - install-code-climate-reporter
       - e2e-tests:
           requires:
           - build-e2e
+      - upload-coverage:
+          requires:
+          - unit-tests
       - deploy-staging:
-          filters:
-            branches:
-              only: master
+          <<: *filter_master_branch
           requires:
           - unit-tests
           - e2e-tests
       - hold:
-          filters:
-            branches:
-              only: master
+          <<: *filter_master_branch
           type: approval
           requires:
           - unit-tests
       - deploy-production:
-          filters:
-            branches:
-              only: master
+          <<: *filter_master_branch
           requires:
           - hold
           - e2e-tests
