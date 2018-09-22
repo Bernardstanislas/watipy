@@ -49,9 +49,13 @@ jobs:
     - run: # run tests
         name: Run Test and Coverage
         command: |
-          npm test -- --coverage
+          npm test -- --reporters=jest-junit
+        environment:
+          JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
     - store_test_results:
-        path: coverage
+        path: reports/junit
+    - store_artifacts:
+        path: reports/junit
 
   e2e-tests:
     docker:
