@@ -71,7 +71,7 @@ jobs:
     - run: # run tests
         name: Run Test and Coverage
         command: |
-          npm test -- --reporters=default --reporters=jest-junit
+          npm test -- --coverage --reporters=default --reporters=jest-junit
           ./tmp/cc-test-reporter format-coverage -t lcov -o tmp/codeclimate.frontend.json coverage/lcov.info
         environment:
           JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"

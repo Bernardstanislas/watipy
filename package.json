@@ -15,7 +15,7 @@
   "scripts": {
     "start": "cp .env.dev .env && react-app-rewired start",
     "build": "react-app-rewired build",
-    "test": "jest --env=jsdom --ci --coverage",
+    "test": "jest --env=jsdom --ci",
     "cypress": "cypress run",
     "test-e2e": "run-p -r start cypress",
     "eject": "react-app-rewired eject",
