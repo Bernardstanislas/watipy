@@ -51,6 +51,7 @@
     "transform": {
       ".*": "<rootDir>/node_modules/webpack-babel-jest"
     },
-    "setupTestFrameworkScriptFile": "<rootDir>test/setupTests.js"
+    "setupTestFrameworkScriptFile": "<rootDir>test/setupTests.js",
+    "moduleDirectories": ["node_modules", "src"]
   }
 }
