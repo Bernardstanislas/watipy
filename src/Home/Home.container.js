@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { inject, observer } from 'mobx-react';
 
 import Home from "./Home";
+import Loader from './Loader';
 
 @inject('collectionStore')
 @observer
@@ -12,6 +13,9 @@ class HomeContainer extends Component {
 
     render() {
         const { collectionStore, ...otherProps } = this.props;
+        if (collectionStore.loading) {
+            return <Loader/>;
+        }
         return <Home {...otherProps} collections={collectionStore.collections} />;
     }
 }
