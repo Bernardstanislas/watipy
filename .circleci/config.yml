@@ -13,11 +13,6 @@ npm_install: &npm_install
         - ~/.npm
         - ~/.cache
 
-add_ssh_keys: &add_ssh_keys
-  - add_ssh_keys:
-    fingerprints:
-      - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
-
 filter_master_branch: &filter_master_branch
   filters:
     branches:
@@ -67,7 +62,7 @@ jobs:
     - run: # run tests
         name: Run Test and Coverage
         command: |
-          npm test -- --reporters=jest-junit
+          npm test -- --reporters=default --reporters=jest-junit
           ./tmp/cc-test-reporter format-coverage -t lcov -o tmp/codeclimate.frontend.json coverage/lcov.info
         environment:
           JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
@@ -117,8 +112,8 @@ jobs:
       - restore_cache: # special step to restore the dependency cache
           key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
       - add_ssh_keys:
-        fingerprints:
-        - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
+          fingerprints:
+            - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
       - run:
           name: Deploy to Github Pages
           command: |
@@ -132,8 +127,8 @@ jobs:
       - restore_cache: # special step to restore the dependency cache
           key: dependency-cache-{{ .Branch }}-{{ checksum "package.json" }}
       - add_ssh_keys:
-        fingerprints:
-        - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
+          fingerprints:
+            - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
       - run:
           name: Deploy to Github Pages
           command: |
