@@ -5,45 +5,6 @@ filter_master_branch: &filter_master_branch
 
 version: 2
 jobs:
-  build:
-    docker:
-      - image: circleci/node:8
-    steps:
-    - checkout
-    - restore_cache:
-        key: npm-cache-v2-{{ checksum "package-lock.json" }}
-    - run:
-        name: Setup Dependencies
-        command: npm install
-    - save_cache:
-        key: npm-cache-v2-{{ checksum "package-lock.json" }}
-        paths:
-        - ./node_modules
-        - ~/.npm
-        - ~/.cache
-
-  build-e2e:
-    docker:
-      # the Docker image with Cypress dependencies
-      - image: cypress/base:8
-        environment:
-          ## this enables colors in the output
-          TERM: xterm
-    working_directory: ~/app
-    steps:
-    - checkout
-    - restore_cache: # special step to restore the dependency cache
-        key: npm-cache-e2e-v2-{{ checksum "package-lock.json" }}
-    - run:
-        name: Setup Dependencies
-        command: npm install
-    - save_cache: # special step to save the dependency cache
-        key: npm-cache-e2e-v2-{{ checksum "package-lock.json" }}
-        paths:
-        - ./node_modules
-        - ~/.npm
-        - ~/.cache
-
   install-code-climate-reporter:
     docker:
     - image: circleci/node:8
@@ -64,10 +25,19 @@ jobs:
     - image: circleci/node:8
     steps:
     - checkout
+    - restore_cache:
+        key: npm-cache-v2-{{ checksum "package-lock.json" }}
+    - run:
+        name: Setup Dependencies
+        command: npm install
+    - save_cache:
+        key: npm-cache-v2-{{ checksum "package-lock.json" }}
+        paths:
+        - ./node_modules
+        - ~/.npm
+        - ~/.cache
     - attach_workspace:
         at: ~/project/tmp
-    - restore_cache: # special step to restore the dependency cache
-        key: npm-cache-v2-{{ checksum "package-lock.json" }}
     - run: # run tests
         name: Run Test and Coverage
         command: |
@@ -75,10 +45,6 @@ jobs:
           ./tmp/cc-test-reporter format-coverage -t lcov -o tmp/codeclimate.frontend.json coverage/lcov.info
         environment:
           JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
-    - persist_to_workspace:
-        root: tmp
-        paths:
-        - codeclimate.frontend.json
     - store_test_results:
         path: reports/junit
     - store_artifacts:
@@ -94,8 +60,17 @@ jobs:
     working_directory: ~/app
     steps:
     - checkout
-    - restore_cache:
+    - restore_cache: # special step to restore the dependency cache
         key: npm-cache-e2e-v2-{{ checksum "package-lock.json" }}
+    - run:
+        name: Setup Dependencies
+        command: npm install
+    - save_cache: # special step to save the dependency cache
+        key: npm-cache-e2e-v2-{{ checksum "package-lock.json" }}
+        paths:
+        - ./node_modules
+        - ~/.npm
+        - ~/.cache
     - run: npm run test-e2e
     - store_artifacts:
         path: cypress/videos
@@ -120,6 +95,15 @@ jobs:
       - checkout
       - restore_cache:
           key: npm-cache-v2-{{ checksum "package-lock.json" }}
+      - run:
+          name: Setup Dependencies
+          command: npm install
+      - save_cache:
+          key: npm-cache-v2-{{ checksum "package-lock.json" }}
+          paths:
+          - ./node_modules
+          - ~/.npm
+          - ~/.cache
       - add_ssh_keys:
           fingerprints:
             - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
@@ -135,6 +119,15 @@ jobs:
       - checkout
       - restore_cache:
           key: npm-cache-v2-{{ checksum "package-lock.json" }}
+      - run:
+          name: Setup Dependencies
+          command: npm install
+      - save_cache:
+          key: npm-cache-v2-{{ checksum "package-lock.json" }}
+          paths:
+          - ./node_modules
+          - ~/.npm
+          - ~/.cache
       - add_ssh_keys:
           fingerprints:
             - "36:f2:66:a2:f4:9a:96:e6:e6:83:58:1e:7b:39:e7:36"
@@ -147,16 +140,11 @@ workflows:
   version: 2
   build-test-and-deploy:
     jobs:
-      - build
-      - build-e2e
       - install-code-climate-reporter
       - unit-tests:
           requires:
-          - build
           - install-code-climate-reporter
-      - e2e-tests:
-          requires:
-          - build-e2e
+      - e2e-tests
       - upload-coverage:
           requires:
           - unit-tests
