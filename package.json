@@ -15,7 +15,7 @@
   "scripts": {
     "start": "cp .env.dev .env && react-app-rewired start",
     "build": "react-app-rewired build",
-    "test": "jest --env=jsdom --ci --coverage",
+    "test": "jest --env=jsdom --ci",
     "cypress": "cypress run",
     "test-e2e": "run-p -r start cypress",
     "eject": "react-app-rewired eject",
@@ -51,6 +51,7 @@
     "transform": {
       ".*": "<rootDir>/node_modules/webpack-babel-jest"
     },
-    "setupTestFrameworkScriptFile": "<rootDir>test/setupTests.js"
+    "setupTestFrameworkScriptFile": "<rootDir>test/setupTests.js",
+    "moduleDirectories": ["node_modules", "src"]
   }
 }
