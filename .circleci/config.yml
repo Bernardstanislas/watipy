@@ -45,6 +45,10 @@ jobs:
           ./tmp/cc-test-reporter format-coverage -t lcov -o tmp/codeclimate.frontend.json coverage/lcov.info
         environment:
           JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
+    - persist_to_workspace:
+        root: tmp
+        paths:
+        - codeclimate.frontend.json
     - store_test_results:
         path: reports/junit
     - store_artifacts:
